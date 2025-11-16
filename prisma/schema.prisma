@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Room {
+  id          String   @id @default(uuid())
+  hostUserId  String
+  status      String   @default("waiting") // waiting, voting, completed
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+  
+  participants Participant[]
+  votes       Vote[]
+  suggestions Suggestion[]
+  
+  @@map("rooms")
+}
+
+model Participant {
+  id          String   @id @default(uuid())
+  roomId      String
+  userId      String
+  name        String
+  preferences Json?    // Store as JSONB
+  joinedAt    DateTime @default(now())
+  
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  votes       Vote[]
+  
+  @@unique([roomId, userId])
+  @@map("participants")
+}
+
+model Vote {
+  id          String   @id @default(uuid())
+  roomId      String
+  userId      String
+  movieId     String
+  rating      Int      // 1-5
+  votedAt     DateTime @default(now())
+  
+  room        Room        @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  participant Participant @relation(fields: [userId, roomId], references: [userId, roomId], onDelete: Cascade)
+  
+  @@unique([roomId, userId, movieId])
+  @@map("votes")
+}
+
+model Suggestion {
+  id          String   @id @default(uuid())
+  roomId      String
+  movies      Json     // Array of movie objects with reasoning
+  generatedAt DateTime @default(now())
+  
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  
+  @@map("suggestions")
+}
