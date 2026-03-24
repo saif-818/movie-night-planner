@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model Room {
@@ -34,6 +33,7 @@ model Participant {
   
   @@unique([roomId, userId])
   @@map("participants")
+  @@unique([userId, roomId])
 }
 
 model Vote {

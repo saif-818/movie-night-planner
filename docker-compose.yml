@@ -1,6 +1,27 @@
 version: '3.8'
 
 services:
+# Next.js Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs_app
+    command: sh -c "npx prisma db push && npm run dev"
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # These variables allow Next.js to talk to your other containers
+      DATABASE_URL: ${DATABASE_URL}
+      KAFKA_BROKER: broker:29092
+    depends_on:
+      - postgres
+      - broker
+  
+    # Standard Next.js development command
+    command: npm run dev
   broker:
     image: apache/kafka:latest
     hostname: broker
@@ -27,12 +48,17 @@ services:
     image: postgres:14
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: abcd
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
       POSTGRES_DB: movie_night
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/Library/PostgreSQL/14/data
+    secrets:
+      - db_password
+secrets:
+   db_password:
+     file: ./db_password.txt
 
 volumes:
   postgres_data:

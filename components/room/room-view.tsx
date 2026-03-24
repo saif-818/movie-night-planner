@@ -24,7 +24,7 @@ export default function RoomView({ initialRoom, shareableLink }: RoomViewProps) 
   }, []);
 
   // Handle real-time events
-  useEffect(() => {
+  useEffect(() => { 
     if (events.length === 0) return;
 
     const latestEvent = events[events.length - 1];
@@ -155,8 +155,8 @@ export default function RoomView({ initialRoom, shareableLink }: RoomViewProps) 
           <div className="mt-6 flex gap-3">
             {isHost && (
               <button
-                onClick={() => alert('Phase 3: Start preferences coming soon!')}
-                className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors"
+                 onClick={() => router.push(`/room/${room.id}/preferences`)}
+                 className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors"
               >
                 Start Setting Preferences
               </button>
