@@ -7,7 +7,7 @@ export async function GET(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
     const { searchParams } = new URL(request.url);
     const userId = searchParams.get('userId');
 
@@ -39,7 +39,7 @@ export async function POST(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
     const body = await request.json();
     const { userId, preferences } = body;
 

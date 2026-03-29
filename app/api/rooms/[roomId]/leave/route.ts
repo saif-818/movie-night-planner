@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
     const { userId } = await request.json();
 
     if (!userId) {

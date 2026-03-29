@@ -36,8 +36,14 @@ yarn-error.log*
 # vercel
 .vercel
 
+# debug
+.vscode
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
 /app/generated/prisma
+
+# database password
+db_password.txt

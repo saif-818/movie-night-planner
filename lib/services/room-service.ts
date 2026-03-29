@@ -157,7 +157,6 @@ export class RoomService {
   static async leaveRoom(roomId: string, userId: string) {
     try {
       const room = await this.getRoomById(roomId);
-
       // Don't allow host to leave if there are other participants
       if (room.hostUserId === userId && room.participants.length > 1) {
         throw new Error('Host cannot leave while other participants are in the room');

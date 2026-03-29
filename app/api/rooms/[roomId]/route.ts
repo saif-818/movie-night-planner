@@ -26,7 +26,7 @@ export async function DELETE(
   { params }: { params: { roomId: string } }
 ) {
   try {
-    const { roomId } = params;
+    const { roomId } = await params;
     const { userId } = await request.json();
 
     const room = await RoomService.getRoomById(roomId);
