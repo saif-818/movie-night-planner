@@ -22,11 +22,6 @@ export default async function RoomPage({
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 py-12 px-4">
       <div className="container mx-auto max-w-4xl">
         <RoomView initialRoom={room} shareableLink={shareableLink} />
-
-        {/* Join Form */}
-        <div className="mt-6">
-          <JoinRoomForm roomId={room.id} />
-        </div>
       </div>
     </div>
   );

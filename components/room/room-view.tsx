@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ParticipantList from './participant-list';
 import { useRoomUpdates } from '../../hooks/useRoomUpdates';
-import { Copy, Share2, Wifi, WifiOff } from 'lucide-react';
+import { AlertCircle, Copy, Share2, Wifi, WifiOff } from 'lucide-react';
+import JoinRoomForm from './join-room-form';
 
 interface RoomViewProps {
   initialRoom: any;
@@ -15,12 +16,25 @@ export default function RoomView({ initialRoom, shareableLink }: RoomViewProps) 
   const [room, setRoom] = useState(initialRoom);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { events, isConnected } = useRoomUpdates(initialRoom.id);
+  const [isCheckingUser, setIsCheckingUser] = useState(true);
+  const [isInRoom, setIsInRoom] = useState(false);
+
   const router = useRouter();
 
   // Get current user from localStorage
   useEffect(() => {
     const userId = localStorage.getItem('userId');
     setCurrentUserId(userId);
+
+    if (userId) {
+      // Check if user is already in the room
+      const userInRoom = initialRoom.participants.some(
+        (p: any) => p.userId === userId
+      );
+      setIsInRoom(userInRoom);
+    }
+    
+    setIsCheckingUser(false);
   }, []);
 
   // Handle real-time events
@@ -31,18 +45,44 @@ export default function RoomView({ initialRoom, shareableLink }: RoomViewProps) 
 
     switch (latestEvent.type) {
       case 'USER_JOINED_ROOM':
-      case 'USER_LEFT_ROOM':
         // Refresh room data
-        fetch(`/api/rooms/${room.id}`)
-          .then((res) => res.json())
-          .then((data) => setRoom(data.room))
-          .catch((error) => console.error('Error refreshing room:', error));
+        console.log('User joined event received:', latestEvent);
+        
+        // If this is the current user joining, update status
+        if (latestEvent.userId === currentUserId) {
+          setIsInRoom(true);
+        }
+        refreshRoom();
         break;
+      case 'USER_LEFT_ROOM':
+        console.log('User left event received:', latestEvent);   
+        // If current user left in another tab
+        if (latestEvent.userId === currentUserId) {
+          setIsInRoom(false);
+        }
+        refreshRoom();
+        break;
+      case 'PREFERENCE_UPDATED':
+          console.log('Preference updated event received:', latestEvent);
+          refreshRoom();
+          break;
 
       default:
         break;
     }
   }, [events, room.id]);
+
+  const refreshRoom = async () => {
+    try {
+      const response = await fetch(`/api/rooms/${room.id}`);
+      const data = await response.json();
+      const userId = localStorage.getItem('userId');
+      setCurrentUserId(userId);
+      setRoom(data.room);
+    } catch (error) {
+      console.error('Error refreshing room:', error);
+    }
+  };
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(shareableLink);
@@ -51,6 +91,9 @@ export default function RoomView({ initialRoom, shareableLink }: RoomViewProps) 
 
   const handleLeaveRoom = async () => {
     if (!currentUserId) return;
+
+    const confirmLeave = confirm('Are you sure you want to leave this room?');
+    if (!confirmLeave) return;
 
     try {
       const response = await fetch(`/api/rooms/${room.id}/leave`, {
@@ -68,13 +111,57 @@ export default function RoomView({ initialRoom, shareableLink }: RoomViewProps) 
       }
     } catch (error) {
       console.error('Error leaving room:', error);
+      alert('Failed to leave room. Please try again.');
     }
   };
 
+  const handleJoinSuccess = () => {
+    setIsInRoom(true);
+    refreshRoom();
+  };
+
   const isHost = room.hostUserId === currentUserId;
-  const isInRoom = room.participants.some(
-    (p: any) => p.userId === currentUserId
-  );
+
+   // Show loading while checking user status
+   if (isCheckingUser) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+   // Show join form if user is not in the room
+   if (!isInRoom) {
+    return (
+      <div>
+        {/* Room Info Header */}
+        <div className="bg-white rounded-2xl shadow-xl p-8 mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            Movie Night Room
+          </h1>
+          <p className="text-gray-600 mb-4">
+            Room ID: <span className="font-mono">{room.id.slice(0, 8)}</span>
+          </p>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-blue-900 font-medium">
+                Join this room to participate
+              </p>
+              <p className="text-sm text-blue-700 mt-1">
+                {room.participants.length} participant{room.participants.length !== 1 ? 's' : ''} already in the room
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Join Form */}
+        <JoinRoomForm roomId={room.id} onJoinSuccess={handleJoinSuccess} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -153,14 +240,12 @@ export default function RoomView({ initialRoom, shareableLink }: RoomViewProps) 
         {/* Actions */}
         {isInRoom && (
           <div className="mt-6 flex gap-3">
-            {isHost && (
               <button
                  onClick={() => router.push(`/room/${room.id}/preferences`)}
                  className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-medium hover:bg-green-700 transition-colors"
               >
                 Start Setting Preferences
               </button>
-            )}
             <button
               onClick={handleLeaveRoom}
               className="px-6 py-3 bg-red-100 text-red-700 rounded-lg font-medium hover:bg-red-200 transition-colors"

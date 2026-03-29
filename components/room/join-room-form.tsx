@@ -5,13 +5,13 @@ import { useRouter } from 'next/navigation';
 
 interface JoinRoomFormProps {
   roomId: string;
+  onJoinSuccess?: () => void;
 }
 
-export default function JoinRoomForm({ roomId }: JoinRoomFormProps) {
+export default function JoinRoomForm({ roomId, onJoinSuccess }: JoinRoomFormProps) {
   const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +36,10 @@ export default function JoinRoomForm({ roomId }: JoinRoomFormProps) {
       // Store user info in localStorage
       localStorage.setItem('userId', data.userId);
       localStorage.setItem('userName', userName);
-
-      // Refresh the page to show the room
-      router.refresh();
+      // Call success callback
+      if (onJoinSuccess) {
+        onJoinSuccess();
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
