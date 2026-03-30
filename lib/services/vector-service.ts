@@ -1,10 +1,8 @@
 import { Pinecone } from "@pinecone-database/pinecone";
-import OpenAI from "openai";
+import { ContentEmbedding, GoogleGenAI } from "@google/genai";
 import { TMDBService, MovieDetails } from "./tmdb-service";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 let pineconeClient: Pinecone | null = null;
 
@@ -35,12 +33,26 @@ export class VectorService {
   // Generate embedding for text using OpenAI
   static async generateEmbedding(text: string): Promise<number[]> {
     try {
-      const response = await openai.embeddings.create({
-        model: "text-embedding-3-small",
-        input: text,
+      const response = await ai.models.embedContent({
+        model: "gemini-embedding-2-preview",
+        contents: [
+          {
+            role: "user",
+            parts: [{ text }],
+          },
+        ],
+        config:{
+            outputDimensionality: 1536,
+        }
       });
 
-      return response.data[0].embedding;
+      const embedding = response?.embeddings?.[0]?.values;
+
+      if (!embedding) {
+        throw new Error("No embedding returned from API");
+      }
+
+      return embedding;
     } catch (error) {
       console.error("Error generating embedding:", error);
       throw new Error("Failed to generate embedding");
@@ -114,7 +126,7 @@ export class VectorService {
       );
 
       // Batch upsert
-      await index.upsert({records: vectors});
+      await index.upsert({ records: vectors });
 
       console.log(`✅ Stored ${movies.length} movies in vector DB`);
     } catch (error) {

@@ -1,11 +1,9 @@
-import OpenAI from 'openai';
 import { VectorService } from './vector-service';
 import { TMDBService, MovieDetails } from './tmdb-service';
 import { AggregatedPreferences } from '@/lib/types/preferences';
+import { ContentEmbedding, GoogleGenAI } from "@google/genai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export interface MovieSuggestion {
   movie: MovieDetails;
@@ -159,23 +157,25 @@ Return your response as a JSON array with this structure:
 
 Score should be 0-100 based on how well it matches the preferences.`;
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
           {
             role: 'system',
-            content: 'You are an expert movie recommendation system. Always respond with valid JSON only.',
+            parts: [{ text : 'You are an expert movie recommendation system. Always respond with valid JSON only.'}],
           },
           {
             role: 'user',
-            content: prompt,
+            parts: [{ text : prompt}],
           },
         ],
-        temperature: 0.7,
-        response_format: { type: 'json_object' },
+        config: {
+            temperature : 1.0,
+            responseSchema : 'application/json'
+        }
       });
 
-      const content = response.choices[0].message.content || '{}';
+      const content = response.text || '{}';
       const llmResponse = JSON.parse(content);
       
       // Handle both array and object with array responses
@@ -231,19 +231,21 @@ Movie details:
 
 Provide a 2-3 sentence explanation that would convince the group this is a good choice.`;
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
-        messages: [
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash',
+        contents: [
           {
             role: 'user',
-            content: prompt,
+            parts: [{ text : prompt}],
           },
         ],
-        temperature: 0.7,
-        max_tokens: 150,
+        config: {
+            temperature : 1.0,
+            maxOutputTokens : 150
+        }
       });
 
-      return response.choices[0].message.content || 'This movie matches your preferences.';
+      return response.text || 'This movie matches your preferences.';
     } catch (error) {
       console.error('Error explaining recommendation:', error);
       return `This ${movie.genres?.map(g => g.name).join('/')} movie is highly rated and matches your group's taste.`;

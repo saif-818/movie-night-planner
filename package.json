@@ -10,6 +10,7 @@
     "test:kafka": "tsx scripts/test-kafka.ts"
   },
   "dependencies": {
+    "@google/genai": "^1.47.0",
     "@pinecone-database/pinecone": "^7.1.0",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
@@ -22,7 +23,6 @@
     "lucide-react": "^0.554.0",
     "net": "^1.0.2",
     "next": "16.0.0",
-    "openai": "^6.33.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "sse": "^0.0.8",
